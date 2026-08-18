@@ -1,3 +1,5 @@
+from address_book import AddressBook, Record
+
 def input_error(func):
     def inner(*args, **kwargs):
         try:
@@ -13,43 +15,70 @@ def input_error(func):
 
 
 @input_error
-def add_contact(info, contacts):
+def add_contact(info, book):
     name, phone = info
     name = name.lower()
+    record = book.find(name)
 
-    contacts[name] = phone
-    return "Contact added."
+    if record is None:
+        record = Record(name)
+        record.add_phone(phone)
+        book.add_record(record)
+        return "Contact added."
+
+    record.add_phone(phone)
+    return "Contact updated."
 
 
 @input_error
-def change_contact(info, contacts):
-    name, phone = info
+def change_contact(info, book):
+    name, old_phone, phone = info
     name = name.lower()
 
-    if name not in contacts:
+    record = book.find(name)
+
+    if record is None:
         raise KeyError
 
-    contacts[name] = phone
+    record.edit_phone(old_phone, phone)
     return "Contact changed."
 
 
 @input_error
-def show_all(contacts):
-    if not contacts:
-        return "No contacts saved."
+def show_all(book):
+    print("Here is all phone list")
+    for record in book.values():
+        print(record)
 
-    contact_lines = []
+@input_error
+def phone_contact(args, book):
+    name = args[0].lower()
 
-    for name, phone in contacts.items():
-        contact_lines.append(f"{name}: {phone}")
+    record = book.find(name)
+    if record is None:
+        raise KeyError
 
-    return "\n".join(contact_lines)
+    return record.phones
 
 
 @input_error
-def phone_contact(args, contacts):
-    name = args[0].lower()
-    return f"{name}: {contacts[name]}"
+def add_birthday(args, book):
+    name, birthday = args
+
+    record = book.find(name.lower())
+    record.add_birthday(birthday)
+    return 'Birthday added.'
+
+
+@input_error
+def show_birthday(args, book):
+    record = book.find(args)
+    return f"{record.name.upper()}'s birthday is {record.birthday}"
+
+
+@input_error
+def birthdays(args, book):
+    return book.get_upcoming_birthdays()
 
 
 def parse_input(user_input):
@@ -63,7 +92,7 @@ def parse_input(user_input):
 
 
 def main():
-    contacts = {}
+    book = AddressBook()
     print("Welcome to the assistant bot!")
 
     while True:
@@ -76,12 +105,19 @@ def main():
         elif command == "hello":
             print("How can I help you?")
         elif command == "add":
-            print(add_contact(user_info, contacts))
+            print(add_contact(user_info, book))
         elif command == "change":
-            print(change_contact(user_info, contacts))
+            print(change_contact(user_info, book))
         elif command == "phone":
-            print(phone_contact(user_info, contacts))
+            print(phone_contact(user_info, book))
         elif command == "all":
-            print(show_all(contacts))
+            show_all(book)
+        elif command == "add-birthday":
+            print(add_birthday(user_info, book))
+        elif command == "show-birthday":
+            print(show_birthday(user_info, book))
+        elif command == "birthdays":
+            print("Here is th list of upcoming birthdays")
+            birthdays(book)
         else:
             print("Invalid command.")
